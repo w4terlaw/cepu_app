@@ -62,11 +62,14 @@ class _LoginState extends State<Login> {
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('CEPU/qr',style: TextStyle(
-                      fontFamily: 'Rubik',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 40,
-                      color: Colors.grey),),
+                  Text(
+                    'CEPU/qr',
+                    style: TextStyle(
+                        fontFamily: 'Rubik',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 40,
+                        color: Colors.grey),
+                  ),
                   Padding(padding: EdgeInsets.only(top: 50)),
                   OutlinedButton(
                     style: ButtonStyle(
@@ -91,7 +94,7 @@ class _LoginState extends State<Login> {
                           CircleAvatar(
                             backgroundImage:
                                 AssetImage("assets/images/google_logo.png"),
-                            radius: 20,
+                            radius: 15,
                           ),
                           // Image(
                           //   image: AssetImage("assets/images/google_logo.png"),
@@ -102,7 +105,7 @@ class _LoginState extends State<Login> {
                             child: Text(
                               'Войти через Google',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 16,
                                 fontFamily: 'Rubik',
                                 color: Colors.black,
                               ),
@@ -123,30 +126,38 @@ class _LoginState extends State<Login> {
   }
 
   Future signIn() async {
-    final user = await GoogleSignInApi.login();
-    await GoogleSignInApi.logout();
-    if (user == null) {
+    try {
+      final user = await GoogleSignInApi.login();
+
+      if (user == null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Не удалось выполнить вход, попробуйте позже')));
+      } else {
+        data = {
+          'displayName': user.displayName,
+          'email': user.email,
+          'id': user.id,
+          'photoUrl': user.photoUrl
+        };
+        req(data['displayName']);
+        // print(user.email);
+        await UserSimplePreferences.setDisplayName(data['displayName']);
+        await UserSimplePreferences.setPhotoUrl(data['photoUrl']);
+        await UserSimplePreferences.setEmail(data['email']);
+        Navigator.of(context)
+            .pushReplacement(MaterialPageRoute(builder: (context) => Home()));
+      }
+      await GoogleSignInApi.logout();
+    } catch (err) {
+      print('Error --------: $err');
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Не удалось выполнить вход')));
-    } else {
-      data = {
-        'displayName': user.displayName,
-        'email': user.email,
-        'id': user.id,
-        'photoUrl': user.photoUrl
-      };
-      // print(user.email);
-      await UserSimplePreferences.setDisplayName(data['displayName']);
-      await UserSimplePreferences.setPhotoUrl(data['photoUrl']);
-      await UserSimplePreferences.setEmail(data['email']);
-      Navigator.of(context)
-          .pushReplacement(MaterialPageRoute(builder: (context) => Home()));
     }
+
   }
 
-  void req() async {
-    var id = 2;
-    var url = 'http://localhost:5000/todo/api/v1.0/tasks/$id';
+  void req(link) async {
+    var url = 'http://localhost:5000/todo/api/v1.0/tasks/$link';
 
     // Await the http get response, then decode the json-formatted response.
     var response = await Requests.get(url);

@@ -1,11 +1,9 @@
 import 'dart:async';
-
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cepu_id/utils/UserSimplePreferences.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:requests/requests.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:cepu_id/api/GoogleSignInApi.dart';
 import 'login.dart';
 
 const Seconds = Duration(seconds: 5);
@@ -94,8 +92,10 @@ class _HomeState extends State<Home> {
                   // Padding(
                   //     padding: EdgeInsets.only(top: screenSize.height * 0.15)),
                   CircleAvatar(
-                    backgroundImage: NetworkImage(photoUrl),
+                    backgroundImage: CachedNetworkImageProvider(photoUrl),
                     radius: 45,
+                    // child: Image.network('https://i.ytimg.com/vi/-Fz-Z_P8Z0Q/maxresdefault.jpg'),
+                    backgroundColor: Colors.white,
                   ),
                   Padding(padding: EdgeInsets.only(top: 15)),
                   Text(
