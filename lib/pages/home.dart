@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cepu_id/utils/UserSimplePreferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:requests/requests.dart';
@@ -6,7 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:cepu_id/api/GoogleSignInApi.dart';
 import 'login.dart';
 
-const fiveSec = Duration(seconds: 5);
+const Seconds = Duration(seconds: 5);
 
 class Home extends StatefulWidget {
   // final GoogleSignInAccount user;
@@ -24,6 +26,7 @@ class _HomeState extends State<Home> {
   String displayName = '';
   String email = '';
   String photoUrl = '';
+  late Timer _timer;
 
   @override
   void initState() {
@@ -31,12 +34,19 @@ class _HomeState extends State<Home> {
     email = UserSimplePreferences.getEmail() ?? '';
     photoUrl = UserSimplePreferences.getPhotoUrl() ?? '';
     super.initState();
+    _timer = Timer.periodic(Seconds, (timer) {
+      print(_full_time);
+      setState(() {
+        _full_time = DateTime.now().millisecondsSinceEpoch;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    // if (data != ''){
+
+    // if (displayName != ''){
     //   Timer.periodic(fiveSec, (Timer t) {
     //       print(_full_time);
     //       setState(() {
@@ -51,7 +61,7 @@ class _HomeState extends State<Home> {
     // print(data[0]["signedUrl"]);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
+      body: Container(
         child: Stack(children: <Widget>[
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -64,6 +74,7 @@ class _HomeState extends State<Home> {
                     IconButton(
                         // iconSize: 30.0,
                         onPressed: () async {
+                          _timer.cancel();
                           UserSimplePreferences.clear();
                           Navigator.of(context).pushReplacement(
                               MaterialPageRoute(builder: (context) => Login()));
@@ -78,16 +89,14 @@ class _HomeState extends State<Home> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Column(
-                // mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Padding(
-                      padding: EdgeInsets.only(top: screenSize.height * 0.15)),
-
+                  // Padding(
+                  //     padding: EdgeInsets.only(top: screenSize.height * 0.15)),
                   CircleAvatar(
                     backgroundImage: NetworkImage(photoUrl),
                     radius: 45,
                   ),
-
                   Padding(padding: EdgeInsets.only(top: 15)),
                   Text(
                     displayName,
@@ -101,7 +110,7 @@ class _HomeState extends State<Home> {
                         fontSize: 14,
                         color: Colors.blueGrey),
                   ),
-                  Padding(padding: EdgeInsets.only(top: 20)),
+                  Padding(padding: EdgeInsets.only(top: 15)),
                   QrImage(
                     data: '$_full_time',
                     version: QrVersions.auto,
@@ -112,6 +121,7 @@ class _HomeState extends State<Home> {
                     //   size: Size(52, 52),
                     // ),
                   ),
+                  Padding(padding: EdgeInsets.only(bottom: 100)),
                 ],
               )
             ],

@@ -12,18 +12,20 @@ Future main() async {
     DeviceOrientation.portraitDown,
   ]);
   if (UserSimplePreferences.getDisplayName() != null) {
-    runApp(MaterialApp(
-      home: Home(),
-    ),);
-  }
-  else{
-    runApp(MaterialApp(
-      home: Login(),
-    ),);
+    runApp(
+      MaterialApp(
+        home: Home(),
+      ),
+    );
+  } else {
+    runApp(
+      MaterialApp(
+        home: Login(),
+      ),
+    );
   }
 }
 
 // Future main2() async {
 //   await UserSimplePreferences.init();
 // }
-
