@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:requests/requests.dart';
 import 'package:cepu_id/api/GoogleSignInApi.dart';
 import 'package:cepu_id/pages/home.dart';
 import 'package:cepu_id/utils/UserSimplePreferences.dart';
@@ -65,7 +64,7 @@ class _LoginState extends State<Login> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'CEPU/qr',
+                    'CEPUqr',
                     style: TextStyle(
                         fontFamily: 'Rubik',
                         fontWeight: FontWeight.bold,
@@ -135,6 +134,7 @@ class _LoginState extends State<Login> {
           .showSnackBar(SnackBar(content: Text('Не удалось выполнить вход')));
     } else {
       await GoogleSignInApi.logout();
+
       final uri = Uri.https('flask-pymongo-server.vercel.app', '/user/add');
 
       final msg = jsonEncode({
