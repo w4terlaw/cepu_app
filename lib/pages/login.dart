@@ -4,6 +4,8 @@ import 'package:requests/requests.dart';
 import 'package:cepu_id/api/GoogleSignInApi.dart';
 import 'package:cepu_id/pages/home.dart';
 import 'package:cepu_id/utils/UserSimplePreferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -15,7 +17,7 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   // static const email = 'email';
   // GoogleSignInAccount? _currentUser;
-  Map<String, dynamic> data = {};
+  // Map<String, dynamic> data = {};
 
   // int _full_time = DateTime.now().millisecondsSinceEpoch;
 
@@ -126,47 +128,44 @@ class _LoginState extends State<Login> {
   }
 
   Future signIn() async {
-    try {
-      final user = await GoogleSignInApi.login();
+    final user = await GoogleSignInApi.login();
 
-      if (user == null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Не удалось выполнить вход, попробуйте позже')));
-      } else {
-        data = {
-          'displayName': user.displayName,
-          'email': user.email,
-          'id': user.id,
-          'photoUrl': user.photoUrl
-        };
-        req(data['displayName']);
-        // print(user.email);
-        await UserSimplePreferences.setDisplayName(data['displayName']);
-        await UserSimplePreferences.setPhotoUrl(data['photoUrl']);
-        await UserSimplePreferences.setEmail(data['email']);
-        Navigator.of(context)
-            .pushReplacement(MaterialPageRoute(builder: (context) => Home()));
-      }
-      await GoogleSignInApi.logout();
-    } catch (err) {
-      print('Error --------: $err');
+    if (user == null) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Не удалось выполнить вход')));
-    }
-
-  }
-
-  void req(link) async {
-    var url = 'http://localhost:5000/todo/api/v1.0/tasks/$link';
-
-    // Await the http get response, then decode the json-formatted response.
-    var response = await Requests.get(url);
-    if (response.statusCode == 200) {
-      var jsonResponse = response.json();
-      // var jsonresp = jsonResponse;
-      print(jsonResponse["user_name"]);
     } else {
-      print('Request failed with status: ${response.statusCode}');
+      await GoogleSignInApi.logout();
+      final uri = Uri.https('flask-pymongo-server.vercel.app', '/user/add');
+
+      final msg = jsonEncode({
+        "displayName": user.displayName!,
+        "email": user.email,
+        "google_id": user.id,
+        "photoUrl": user.photoUrl!
+      });
+
+      Map<String, String> headers = {
+        'Content-type': 'application/json',
+        'Accept': 'application/json',
+      };
+      http.Response response = await http.post(
+        uri,
+        headers: headers,
+        body: msg,
+      );
+      // print(response.body);
+      if (response.statusCode == 200) {
+        var jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+        await UserSimplePreferences.setDisplayName(jsonResponse['displayName']);
+        await UserSimplePreferences.setPhotoUrl(jsonResponse['photoUrl']);
+        await UserSimplePreferences.setEmail(jsonResponse['email']);
+        await UserSimplePreferences.setGoogleId(jsonResponse['google_id']);
+        await UserSimplePreferences.setPublicKey(jsonResponse['public_key']);
+        Navigator.of(context)
+            .pushReplacement(MaterialPageRoute(builder: (context) => Home()));
+      } else {
+        print('Request failed with status: ${response.statusCode}.');
+      }
     }
   }
 }

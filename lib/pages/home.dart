@@ -5,14 +5,13 @@ import 'package:requests/requests.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'login.dart';
+import 'package:encrypt/encrypt.dart' as crypto;
+import 'package:pointycastle/asymmetric/api.dart';
 
-const Seconds = Duration(seconds: 5);
+
+const Seconds = Duration(seconds: 10);
 
 class Home extends StatefulWidget {
-  // final GoogleSignInAccount user;
-  //
-  // const Home({Key? key, required this.user}) : super(key: key);
-
   const Home({Key? key}) : super(key: key);
 
   @override
@@ -20,29 +19,44 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  int _full_time = DateTime.now().millisecondsSinceEpoch;
-  String displayName = '';
-  String email = '';
-  String photoUrl = '';
+  String _fullTime = '';
+  String _displayName = '';
+  String _email = '';
+  String _photoUrl = '';
+  String _googleId = '';
+  String _publicKey = '';
   late Timer _timer;
 
   @override
   void initState() {
-    displayName = UserSimplePreferences.getDisplayName() ?? '';
-    email = UserSimplePreferences.getEmail() ?? '';
-    photoUrl = UserSimplePreferences.getPhotoUrl() ?? '';
-    super.initState();
-    _timer = Timer.periodic(Seconds, (timer) {
-      print(_full_time);
+    _displayName = UserSimplePreferences.getDisplayName() ?? '';
+    _email = UserSimplePreferences.getEmail() ?? '';
+    _photoUrl = UserSimplePreferences.getPhotoUrl() ?? '';
+    _googleId = UserSimplePreferences.getGoogleId() ?? '';
+    _publicKey = UserSimplePreferences.getPublicKey() ?? '';
+    getQrInfo() {
       setState(() {
-        _full_time = DateTime.now().millisecondsSinceEpoch;
+        crypto.RSAKeyParser keyParser = crypto.RSAKeyParser();
+        RSAAsymmetricKey publicKeyParser = keyParser.parse(_publicKey);
+        final publicKey =
+        RSAPublicKey(publicKeyParser.modulus!, publicKeyParser.exponent!);
+        final encrypter = crypto.Encrypter(crypto.RSA(publicKey: publicKey));
+        _fullTime = '${DateTime.now().millisecondsSinceEpoch}';
+        final encrypted = encrypter.encrypt(_fullTime);
+        _fullTime = '${_googleId}|${encrypted.base64}';
+        print(_fullTime);
       });
+    };
+    _timer = Timer.periodic(Seconds, (Timer timer) {
+      getQrInfo();
     });
+    getQrInfo();
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    // final screenSize = MediaQuery.of(context).size;
 
     // if (displayName != ''){
     //   Timer.periodic(fiveSec, (Timer t) {
@@ -68,7 +82,7 @@ class _HomeState extends State<Home> {
                 margin: const EdgeInsets.only(right: 20.0),
                 child: Column(
                   children: [
-                    Padding(padding: EdgeInsets.only(top: 40)),
+                    Padding(padding: EdgeInsets.only(top: 60)),
                     IconButton(
                         // iconSize: 30.0,
                         onPressed: () async {
@@ -92,19 +106,19 @@ class _HomeState extends State<Home> {
                   // Padding(
                   //     padding: EdgeInsets.only(top: screenSize.height * 0.15)),
                   CircleAvatar(
-                    backgroundImage: CachedNetworkImageProvider(photoUrl),
+                    backgroundImage: CachedNetworkImageProvider(_photoUrl),
                     radius: 45,
                     // child: Image.network('https://i.ytimg.com/vi/-Fz-Z_P8Z0Q/maxresdefault.jpg'),
                     backgroundColor: Colors.white,
                   ),
                   Padding(padding: EdgeInsets.only(top: 15)),
                   Text(
-                    displayName,
+                    _displayName,
                     style: TextStyle(fontSize: 20, fontFamily: 'Rubik'),
                   ),
                   Padding(padding: EdgeInsets.only(top: 5)),
                   Text(
-                    email,
+                    _email,
                     style: TextStyle(
                         fontFamily: 'Rubik',
                         fontSize: 14,
@@ -112,7 +126,7 @@ class _HomeState extends State<Home> {
                   ),
                   Padding(padding: EdgeInsets.only(top: 15)),
                   QrImage(
-                    data: '$_full_time',
+                    data: '$_fullTime',
                     version: QrVersions.auto,
                     size: 300,
                     gapless: true,
@@ -131,19 +145,5 @@ class _HomeState extends State<Home> {
     );
   }
 
-  void req() async {
-    var id = 2;
-    var url = 'https://raw.githubusercontent.com/todo/api/v1.0/tasks/$id';
 
-    // Await the http get response, then decode the json-formatted response.
-    var response = await Requests.get(url);
-    // print(response.content());
-    if (response.statusCode == 200) {
-      var jsonResponse = response.json();
-      // var jsonresp = jsonResponse;
-      print(jsonResponse["user_name"]);
-    } else {
-      print('Request failed with status: ${response.statusCode}');
-    }
-  }
 }

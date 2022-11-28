@@ -6,6 +6,8 @@ class UserSimplePreferences {
   static const _displayName = 'displayName';
   static const _email = 'email';
   static const _photoUrl = 'photoUrl';
+  static const _googleId = 'google_id';
+  static const _publicKey = 'public_key';
 
   static Future init() async {
     _preferences = await SharedPreferences.getInstance();
@@ -33,4 +35,18 @@ class UserSimplePreferences {
   }
 
   static String? getPhotoUrl() => _preferences?.getString(_photoUrl);
+
+  //Google_id
+  static Future setGoogleId(String google_id) async {
+    await _preferences?.setString(_googleId, google_id);
+  }
+
+  static String? getGoogleId() => _preferences?.getString(_googleId);
+
+  //Public_key
+  static Future setPublicKey(String publicKey) async {
+    await _preferences?.setString(_publicKey, publicKey);
+  }
+
+  static String? getPublicKey() => _preferences?.getString(_publicKey);
 }
