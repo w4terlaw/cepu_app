@@ -8,6 +8,7 @@ class UserSimplePreferences {
   static const _photoUrl = 'photoUrl';
   static const _googleId = 'google_id';
   static const _publicKey = 'public_key';
+  static const _encryptStr = 'encryptStr';
 
   static Future init() async {
     _preferences = await SharedPreferences.getInstance();
@@ -49,4 +50,11 @@ class UserSimplePreferences {
   }
 
   static String? getPublicKey() => _preferences?.getString(_publicKey);
+
+  //encryptSTRING
+  static Future setEncryptStr(String encryptStr) async {
+    await _preferences?.setString(_encryptStr, encryptStr);
+  }
+
+  static String? getEncryptStr() => _preferences?.getString(_encryptStr);
 }

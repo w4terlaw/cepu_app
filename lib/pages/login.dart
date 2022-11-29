@@ -133,6 +133,18 @@ class _LoginState extends State<Login> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Не удалось выполнить вход')));
     } else {
+      showDialog(
+          context: context,
+          builder: (context) {
+            return Center(
+              child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: CircularProgressIndicator(
+                    color: Colors.black,
+                  )),
+            );
+          });
       await GoogleSignInApi.logout();
 
       final uri = Uri.https('flask-pymongo-server.vercel.app', '/user/add');
@@ -153,6 +165,7 @@ class _LoginState extends State<Login> {
         headers: headers,
         body: msg,
       );
+
       // print(response.body);
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
@@ -164,6 +177,9 @@ class _LoginState extends State<Login> {
         Navigator.of(context)
             .pushReplacement(MaterialPageRoute(builder: (context) => Home()));
       } else {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Непредвиденная ошибка, попробуйте ещё раз.')));
         print('Request failed with status: ${response.statusCode}.');
       }
     }

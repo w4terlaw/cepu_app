@@ -7,8 +7,7 @@ import 'login.dart';
 import 'package:encrypt/encrypt.dart' as crypto;
 import 'package:pointycastle/asymmetric/api.dart';
 
-
-const Seconds = Duration(seconds: 10);
+const Seconds = 30;
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -24,6 +23,8 @@ class _HomeState extends State<Home> {
   String _photoUrl = '';
   String _googleId = '';
   String _publicKey = '';
+  String _encryptStr = '';
+  double? _progress;
   late Timer _timer;
 
   @override
@@ -33,48 +34,73 @@ class _HomeState extends State<Home> {
     _photoUrl = UserSimplePreferences.getPhotoUrl() ?? '';
     _googleId = UserSimplePreferences.getGoogleId() ?? '';
     _publicKey = UserSimplePreferences.getPublicKey() ?? '';
-    getQrInfo() {
+
+    Future setEncryptStrInCache(String fullTime) async {
+      _encryptStr = await UserSimplePreferences.setEncryptStr(fullTime) ?? '';
+    }
+
+    encryptStr(String qrTime) {
+      crypto.RSAKeyParser keyParser = crypto.RSAKeyParser();
+      RSAAsymmetricKey publicKeyParser = keyParser.parse(_publicKey);
+      final publicKey =
+          RSAPublicKey(publicKeyParser.modulus!, publicKeyParser.exponent!);
+      final encrypter = crypto.Encrypter(crypto.RSA(publicKey: publicKey));
+      final encrypted = encrypter.encrypt(qrTime);
+      setEncryptStrInCache('${_googleId}|${encrypted.base64}');
+      _encryptStr = UserSimplePreferences.getEncryptStr() ?? '';
+      _fullTime = _encryptStr;
+    }
+
+    getInfoQR() {
       setState(() {
-        crypto.RSAKeyParser keyParser = crypto.RSAKeyParser();
-        RSAAsymmetricKey publicKeyParser = keyParser.parse(_publicKey);
-        final publicKey =
-        RSAPublicKey(publicKeyParser.modulus!, publicKeyParser.exponent!);
-        final encrypter = crypto.Encrypter(crypto.RSA(publicKey: publicKey));
-        _fullTime = '${DateTime.now().millisecondsSinceEpoch}';
-        final encrypted = encrypter.encrypt(_fullTime);
-        _fullTime = '${_googleId}|${encrypted.base64}';
-        print(_fullTime);
+        String currentTime =
+            '${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10)}';
+        var fullTimeInt = int.parse(currentTime);
+        assert(fullTimeInt is int);
+
+        int remainTime = fullTimeInt % Seconds;
+        int initTime = Seconds - remainTime;
+        int qrTime = fullTimeInt - remainTime;
+
+        // print(
+        //     'fullTimeInt $fullTimeInt qrTime $qrTime remainTime ${remainTime} initTime $initTime');
+        // if (initTime < 2){
+        double timer = (remainTime * (100 / Seconds)) / 100;
+        if (UserSimplePreferences.getEncryptStr() != null) {
+          if (fullTimeInt % Seconds != 1) {
+            _fullTime = UserSimplePreferences.getEncryptStr() ?? '';
+
+            if (timer == 0.0) {
+              timer = 1;
+            }
+            _progress = 1.0 - timer;
+          } else {
+            encryptStr('$qrTime');
+            _progress = 1.0;
+          }
+        } else {
+          encryptStr('$qrTime');
+        }
+        // }
+        // print(remainTime);
       });
-    };
-    _timer = Timer.periodic(Seconds, (Timer timer) {
-      getQrInfo();
+    }
+
+    _timer = Timer.periodic(Duration(seconds: 1), (Timer timer) {
+      getInfoQR();
     });
-    getQrInfo();
+    getInfoQR();
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    // final screenSize = MediaQuery.of(context).size;
-
-    // if (displayName != ''){
-    //   Timer.periodic(fiveSec, (Timer t) {
-    //       print(_full_time);
-    //       setState(() {
-    //         _full_time = DateTime.now().millisecondsSinceEpoch;
-    //       });
-    //     });
-    // }
-    // var value = '{' + data.toString() + '}';
-    // Map valueMap = json.decode(value);
-    // Map<String, dynamic> datas = json.decode(data.toString());
-    // List<dynamic> objectUrls = datas['objectUrls'];
-    // print(data[0]["signedUrl"]);
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
         child: Stack(children: <Widget>[
           Row(
+            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               Container(
@@ -123,7 +149,7 @@ class _HomeState extends State<Home> {
                         fontSize: 14,
                         color: Colors.blueGrey),
                   ),
-                  Padding(padding: EdgeInsets.only(top: 15)),
+                  Padding(padding: EdgeInsets.only(top: 20)),
                   QrImage(
                     data: '$_fullTime',
                     version: QrVersions.auto,
@@ -134,7 +160,18 @@ class _HomeState extends State<Home> {
                     //   size: Size(52, 52),
                     // ),
                   ),
-                  Padding(padding: EdgeInsets.only(bottom: 100)),
+                  Padding(padding: EdgeInsets.only(bottom: 30)),
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: CircularProgressIndicator(
+                      backgroundColor: Color.fromRGBO(234, 232, 232, 1.0),
+                      color: Colors.black,
+                      value: _progress,
+                    ),
+                  ),
+
+                  Padding(padding: EdgeInsets.only(bottom: 40)),
                 ],
               )
             ],
@@ -143,6 +180,4 @@ class _HomeState extends State<Home> {
       ),
     );
   }
-
-
 }
