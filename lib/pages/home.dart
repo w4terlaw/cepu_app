@@ -6,6 +6,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'login.dart';
 import 'package:encrypt/encrypt.dart' as crypto;
 import 'package:pointycastle/asymmetric/api.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'dart:math';
 
 const Seconds = 30;
 
@@ -25,6 +27,7 @@ class _HomeState extends State<Home> {
   String _publicKey = '';
   String _encryptStr = '';
   double? _progress;
+  int _qrTime = 0;
   late Timer _timer;
 
   @override
@@ -35,18 +38,20 @@ class _HomeState extends State<Home> {
     _googleId = UserSimplePreferences.getGoogleId() ?? '';
     _publicKey = UserSimplePreferences.getPublicKey() ?? '';
 
-    Future setEncryptStrInCache(String fullTime) async {
+    Future setEncryptStrInCache(String fullTime, int qrTime) async {
       _encryptStr = await UserSimplePreferences.setEncryptStr(fullTime) ?? '';
+      _qrTime = await UserSimplePreferences.setQrTime(qrTime) ?? 0;
     }
 
-    encryptStr(String qrTime) {
+    encryptStr(int qrTime) {
       crypto.RSAKeyParser keyParser = crypto.RSAKeyParser();
       RSAAsymmetricKey publicKeyParser = keyParser.parse(_publicKey);
       final publicKey =
           RSAPublicKey(publicKeyParser.modulus!, publicKeyParser.exponent!);
       final encrypter = crypto.Encrypter(crypto.RSA(publicKey: publicKey));
-      final encrypted = encrypter.encrypt(qrTime);
-      setEncryptStrInCache('${_googleId}|${encrypted.base64}');
+      final encrypted = encrypter.encrypt(qrTime.toString());
+
+      setEncryptStrInCache('${_googleId}|${encrypted.base64}', qrTime);
       _encryptStr = UserSimplePreferences.getEncryptStr() ?? '';
       _fullTime = _encryptStr;
     }
@@ -61,28 +66,29 @@ class _HomeState extends State<Home> {
         int remainTime = fullTimeInt % Seconds;
         int initTime = Seconds - remainTime;
         int qrTime = fullTimeInt - remainTime;
-
-        // print(
-        //     'fullTimeInt $fullTimeInt qrTime $qrTime remainTime ${remainTime} initTime $initTime');
-        // if (initTime < 2){
+        // print(fullTimeInt - UserSimplePreferences.getQrTime()!);
+        if (UserSimplePreferences.getQrTime() != null) {
+          if (fullTimeInt - UserSimplePreferences.getQrTime()! > Seconds) {
+            encryptStr(qrTime);
+            _fullTime = UserSimplePreferences.getEncryptStr() ?? '';
+          }
+        }
+        _qrTime = UserSimplePreferences.getQrTime() ?? 0;
         double timer = (remainTime * (100 / Seconds)) / 100;
         if (UserSimplePreferences.getEncryptStr() != null) {
           if (fullTimeInt % Seconds != 1) {
             _fullTime = UserSimplePreferences.getEncryptStr() ?? '';
-
             if (timer == 0.0) {
               timer = 1;
             }
             _progress = 1.0 - timer;
           } else {
-            encryptStr('$qrTime');
+            // encryptStr(qrTime);
             _progress = 1.0;
           }
         } else {
-          encryptStr('$qrTime');
+          encryptStr(qrTime);
         }
-        // }
-        // print(remainTime);
       });
     }
 
@@ -95,86 +101,108 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    // ScreenUtil.init(context, designSize: si, height: 896.0);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Container(
+      body: SafeArea(
         child: Stack(children: <Widget>[
-          Row(
-            // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(right: 20.0),
-                child: Column(
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
+            child: Row(
+              // mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  highlightColor: Colors.transparent,
+                  tooltip: 'История',
+                  padding: EdgeInsets.zero,
+                  // iconSize: 30.0,
+                  onPressed: () {},
+                  icon: Icon(Icons.history_outlined, size: 30),
+                ),
+                IconButton(
+                  highlightColor: Colors.transparent,
+                  tooltip: 'Выйти',
+                  padding: EdgeInsets.zero,
+                  // iconSize: 30.0,
+                  onPressed: () async {
+                    _timer.cancel();
+                    UserSimplePreferences.clear();
+                    Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => Login()));
+                  },
+                  icon: Icon(Icons.logout, size: 25),
+                ),
+              ],
+            ),
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircleAvatar(
+                  backgroundImage: CachedNetworkImageProvider(_photoUrl),
+                  radius: 45,
+                  backgroundColor: Colors.grey[200],
+                ),
+                Padding(padding: EdgeInsets.only(top: 15)),
+                Text(
+                  _displayName,
+                  style: TextStyle(fontSize: 20, fontFamily: 'Rubik'),
+                ),
+                Padding(padding: EdgeInsets.only(top: 5)),
+                Text(
+                  _email,
+                  style: TextStyle(
+                      fontFamily: 'Rubik',
+                      fontSize: 14,
+                      color: Colors.blueGrey),
+                ),
+                Padding(padding: EdgeInsets.only(top: 20)),
+                QrImage(
+                  data: '$_fullTime',
+                  version: QrVersions.auto,
+                  size: 300,
+                  gapless: true,
+                  // embeddedImage: NetworkImage(_photoUrl),
+                  // embeddedImageStyle: QrEmbeddedImageStyle(
+                  //   size: Size(288,295),
+                  // ),
+                ),
+                // Text('$_qrTime'),
+                Padding(padding: EdgeInsets.only(bottom: 40)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Padding(padding: EdgeInsets.only(top: 60)),
-                    IconButton(
-                        // iconSize: 30.0,
-                        onPressed: () async {
-                          _timer.cancel();
-                          UserSimplePreferences.clear();
-                          Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(builder: (context) => Login()));
-                        },
-                        icon: Icon(Icons.logout)),
+                    Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.rotationY(pi),
+                      child: SizedBox(
+                        width: 100,
+                        height: 5,
+                        child: LinearProgressIndicator(
+                          backgroundColor: Colors.grey[300],
+                          color: Colors.blue[700],
+                          value: _progress,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 100,
+                      height: 5,
+                      child: LinearProgressIndicator(
+                        backgroundColor: Colors.grey[300],
+                        color: Colors.blue[700],
+                        value: _progress,
+                      ),
+                    ),
                   ],
                 ),
-              )
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Padding(
-                  //     padding: EdgeInsets.only(top: screenSize.height * 0.15)),
-                  CircleAvatar(
-                    backgroundImage: CachedNetworkImageProvider(_photoUrl),
-                    radius: 45,
-                    // child: Image.network('https://i.ytimg.com/vi/-Fz-Z_P8Z0Q/maxresdefault.jpg'),
-                    backgroundColor: Colors.white,
-                  ),
-                  Padding(padding: EdgeInsets.only(top: 15)),
-                  Text(
-                    _displayName,
-                    style: TextStyle(fontSize: 20, fontFamily: 'Rubik'),
-                  ),
-                  Padding(padding: EdgeInsets.only(top: 5)),
-                  Text(
-                    _email,
-                    style: TextStyle(
-                        fontFamily: 'Rubik',
-                        fontSize: 14,
-                        color: Colors.blueGrey),
-                  ),
-                  Padding(padding: EdgeInsets.only(top: 20)),
-                  QrImage(
-                    data: '$_fullTime',
-                    version: QrVersions.auto,
-                    size: 300,
-                    gapless: true,
-                    // embeddedImage: NetworkImage('https://yt3.ggpht.com/ytc/AKedOLRCvhZh9AZaL_nN3a78Wqw7WUT9y_WYq2CN5fYV=s900-c-k-c0x00ffffff-no-rj'),
-                    // embeddedImageStyle: QrEmbeddedImageStyle(
-                    //   size: Size(52, 52),
-                    // ),
-                  ),
-                  Padding(padding: EdgeInsets.only(bottom: 30)),
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: CircularProgressIndicator(
-                      backgroundColor: Color.fromRGBO(234, 232, 232, 1.0),
-                      color: Colors.black,
-                      value: _progress,
-                    ),
-                  ),
 
-                  Padding(padding: EdgeInsets.only(bottom: 20)),
-                ],
-              )
-            ],
+                Padding(padding: EdgeInsets.only(bottom: 40)),
+              ],
+            ),
           ),
         ]),
       ),

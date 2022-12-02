@@ -9,6 +9,7 @@ class UserSimplePreferences {
   static const _googleId = 'google_id';
   static const _publicKey = 'public_key';
   static const _encryptStr = 'encryptStr';
+  static const _qrTime = 'qrTime';
 
   static Future init() async {
     _preferences = await SharedPreferences.getInstance();
@@ -57,4 +58,10 @@ class UserSimplePreferences {
   }
 
   static String? getEncryptStr() => _preferences?.getString(_encryptStr);
+
+  static Future setQrTime(int qrTime) async {
+    await _preferences?.setInt(_qrTime, qrTime);
+  }
+
+  static int? getQrTime() => _preferences?.getInt(_qrTime);
 }

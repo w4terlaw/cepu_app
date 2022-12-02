@@ -152,8 +152,7 @@ class _LoginState extends State<Login> {
       final msg = jsonEncode({
         "displayName": user.displayName!,
         "email": user.email,
-        "google_id": user.id,
-        "photoUrl": user.photoUrl!
+        "google_id": user.id
       });
 
       Map<String, String> headers = {
@@ -170,7 +169,7 @@ class _LoginState extends State<Login> {
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
         await UserSimplePreferences.setDisplayName(jsonResponse['displayName']);
-        await UserSimplePreferences.setPhotoUrl(jsonResponse['photoUrl']);
+        await UserSimplePreferences.setPhotoUrl(user.photoUrl!);
         await UserSimplePreferences.setEmail(jsonResponse['email']);
         await UserSimplePreferences.setGoogleId(jsonResponse['google_id']);
         await UserSimplePreferences.setPublicKey(jsonResponse['public_key']);
