@@ -101,18 +101,18 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    // ScreenUtil.init(context, designSize: si, height: 896.0);
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(children: <Widget>[
+          //Buttons in my appBar
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
             child: Row(
-              // mainAxisAlignment: MainAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                //History button
                 IconButton(
                   highlightColor: Colors.transparent,
                   tooltip: 'История',
@@ -121,6 +121,7 @@ class _HomeState extends State<Home> {
                   onPressed: () {},
                   icon: Icon(Icons.history_outlined, size: 30),
                 ),
+                //Logout button
                 IconButton(
                   highlightColor: Colors.transparent,
                   tooltip: 'Выйти',
@@ -137,21 +138,25 @@ class _HomeState extends State<Home> {
               ],
             ),
           ),
+          //Profile, qr, progress bar widgets in center screen
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                //photoUrl
                 CircleAvatar(
                   backgroundImage: CachedNetworkImageProvider(_photoUrl),
                   radius: 45,
-                  backgroundColor: Colors.grey[200],
+                  backgroundColor: Colors.grey[100],
                 ),
-                Padding(padding: EdgeInsets.only(top: 15)),
+                SizedBox(height: 15),
+                //displayName
                 Text(
                   _displayName,
                   style: TextStyle(fontSize: 20, fontFamily: 'Rubik'),
                 ),
-                Padding(padding: EdgeInsets.only(top: 5)),
+                SizedBox(height: 5),
+                //email
                 Text(
                   _email,
                   style: TextStyle(
@@ -159,7 +164,8 @@ class _HomeState extends State<Home> {
                       fontSize: 14,
                       color: Colors.blueGrey),
                 ),
-                Padding(padding: EdgeInsets.only(top: 20)),
+                SizedBox(height: 20),
+                //Qrcode
                 QrImage(
                   data: '$_fullTime',
                   version: QrVersions.auto,
@@ -170,8 +176,8 @@ class _HomeState extends State<Home> {
                   //   size: Size(288,295),
                   // ),
                 ),
-                // Text('$_qrTime'),
-                Padding(padding: EdgeInsets.only(bottom: 40)),
+                SizedBox(height: 40),
+                //progress bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -199,8 +205,7 @@ class _HomeState extends State<Home> {
                     ),
                   ],
                 ),
-
-                Padding(padding: EdgeInsets.only(bottom: 40)),
+                SizedBox(height: 40),
               ],
             ),
           ),

@@ -158,6 +158,7 @@ class _LoginState extends State<Login> {
       Map<String, String> headers = {
         'Content-type': 'application/json',
         'Accept': 'application/json',
+        // 'authorization': 'Basic '+base64Encode(utf8.encode('miguel:python')),
       };
       http.Response response = await http.post(
         uri,
