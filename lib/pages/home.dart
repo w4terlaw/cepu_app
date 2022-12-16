@@ -64,7 +64,7 @@ class _HomeState extends State<Home> {
         assert(fullTimeInt is int);
 
         int remainTime = fullTimeInt % Seconds;
-        int initTime = Seconds - remainTime;
+        // int initTime = Seconds - remainTime;
         int qrTime = fullTimeInt - remainTime;
         // print(fullTimeInt - UserSimplePreferences.getQrTime()!);
         if (UserSimplePreferences.getQrTime() != null) {

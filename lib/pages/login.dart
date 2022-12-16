@@ -150,9 +150,9 @@ class _LoginState extends State<Login> {
       final uri = Uri.https('flask-pymongo-server.vercel.app', '/user/add');
 
       final msg = jsonEncode({
-        "displayName": user.displayName!,
+        "displayName": user.displayName,
         "email": user.email,
-        "google_id": user.id
+        "google_id": user.id,
       });
 
       Map<String, String> headers = {

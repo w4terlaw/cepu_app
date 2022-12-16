@@ -4,7 +4,7 @@ import 'package:cepu_id/pages/login.dart';
 import 'package:cepu_id/utils/UserSimplePreferences.dart';
 import 'package:flutter/services.dart';
 
-Future main() async {
+main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await UserSimplePreferences.init();
   await SystemChrome.setPreferredOrientations([
