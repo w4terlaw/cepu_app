@@ -1,15 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cepu_id/utils/UserSimplePreferences.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'login.dart';
+import '../../login/view/login_page.dart';
 import 'package:encrypt/encrypt.dart' as crypto;
 import 'package:pointycastle/asymmetric/api.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:math';
 
-const Seconds = 30;
+const seconds = 30;
 
 class Home extends StatefulWidget {
   const Home({Key? key}) : super(key: key);
@@ -19,24 +20,19 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  late Map<String, dynamic> _user;
   String _fullTime = '';
-  String _displayName = '';
-  String _email = '';
-  String _photoUrl = '';
-  String _googleId = '';
-  String _publicKey = '';
   String _encryptStr = '';
   double? _progress;
   int _qrTime = 0;
   late Timer _timer;
 
+
   @override
   void initState() {
-    _displayName = UserSimplePreferences.getDisplayName() ?? '';
-    _email = UserSimplePreferences.getEmail() ?? '';
-    _photoUrl = UserSimplePreferences.getPhotoUrl() ?? '';
-    _googleId = UserSimplePreferences.getGoogleId() ?? '';
-    _publicKey = UserSimplePreferences.getPublicKey() ?? '';
+    super.initState();
+    debugPrint(UserSimplePreferences.getUserMap()); // Check user data
+    _user = jsonDecode(UserSimplePreferences.getUserMap() ?? '');
 
     Future setEncryptStrInCache(String fullTime, int qrTime) async {
       _encryptStr = await UserSimplePreferences.setEncryptStr(fullTime) ?? '';
@@ -45,13 +41,13 @@ class _HomeState extends State<Home> {
 
     encryptStr(int qrTime) {
       crypto.RSAKeyParser keyParser = crypto.RSAKeyParser();
-      RSAAsymmetricKey publicKeyParser = keyParser.parse(_publicKey);
+      RSAAsymmetricKey publicKeyParser = keyParser.parse(_user['public_key']);
       final publicKey =
           RSAPublicKey(publicKeyParser.modulus!, publicKeyParser.exponent!);
       final encrypter = crypto.Encrypter(crypto.RSA(publicKey: publicKey));
       final encrypted = encrypter.encrypt(qrTime.toString());
 
-      setEncryptStrInCache('${_googleId}|${encrypted.base64}', qrTime);
+      setEncryptStrInCache('${_user['google_id']}|${encrypted.base64}', qrTime);
       _encryptStr = UserSimplePreferences.getEncryptStr() ?? '';
       _fullTime = _encryptStr;
     }
@@ -63,20 +59,20 @@ class _HomeState extends State<Home> {
         var fullTimeInt = int.parse(currentTime);
         assert(fullTimeInt is int);
 
-        int remainTime = fullTimeInt % Seconds;
+        int remainTime = fullTimeInt % seconds;
         // int initTime = Seconds - remainTime;
         int qrTime = fullTimeInt - remainTime;
         // print(fullTimeInt - UserSimplePreferences.getQrTime()!);
         if (UserSimplePreferences.getQrTime() != null) {
-          if (fullTimeInt - UserSimplePreferences.getQrTime()! > Seconds) {
+          if (fullTimeInt - UserSimplePreferences.getQrTime()! > seconds) {
             encryptStr(qrTime);
             _fullTime = UserSimplePreferences.getEncryptStr() ?? '';
           }
         }
         _qrTime = UserSimplePreferences.getQrTime() ?? 0;
-        double timer = (remainTime * (100 / Seconds)) / 100;
+        double timer = (remainTime * (100 / seconds)) / 100;
         if (UserSimplePreferences.getEncryptStr() != null) {
-          if (fullTimeInt % Seconds != 1) {
+          if (fullTimeInt % seconds != 1) {
             _fullTime = UserSimplePreferences.getEncryptStr() ?? '';
             if (timer == 0.0) {
               timer = 1;
@@ -92,12 +88,14 @@ class _HomeState extends State<Home> {
       });
     }
 
-    _timer = Timer.periodic(Duration(seconds: 1), (Timer timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
       getInfoQR();
     });
     getInfoQR();
     super.initState();
+
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -110,17 +108,17 @@ class _HomeState extends State<Home> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                //History button
-                IconButton(
-                  highlightColor: Colors.transparent,
-                  tooltip: 'История',
-                  padding: EdgeInsets.zero,
-                  // iconSize: 30.0,
-                  onPressed: () {},
-                  icon: Icon(Icons.history_outlined, size: 30),
-                ),
+                // //History button
+                // IconButton(
+                //   highlightColor: Colors.transparent,
+                //   tooltip: 'История',
+                //   padding: EdgeInsets.zero,
+                //   // iconSize: 30.0,
+                //   onPressed: () {},
+                //   icon: Icon(Icons.history_outlined, size: 30),
+                // ),
                 //Logout button
                 IconButton(
                   highlightColor: Colors.transparent,
@@ -131,9 +129,9 @@ class _HomeState extends State<Home> {
                     _timer.cancel();
                     UserSimplePreferences.clear();
                     Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(builder: (context) => Login()));
+                        MaterialPageRoute(builder: (context) => const Login()));
                   },
-                  icon: Icon(Icons.logout, size: 25),
+                  icon: const Icon(Icons.logout, size: 25),
                 ),
               ],
             ),
@@ -145,26 +143,26 @@ class _HomeState extends State<Home> {
               children: [
                 //photoUrl
                 CircleAvatar(
-                  backgroundImage: CachedNetworkImageProvider(_photoUrl),
+                  backgroundImage: CachedNetworkImageProvider(_user['photo_url']),
                   radius: 45,
                   backgroundColor: Colors.grey[100],
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 //displayName
                 Text(
-                  _displayName,
-                  style: TextStyle(fontSize: 20, fontFamily: 'Rubik'),
+                  _user['display_name'],
+                  style: const TextStyle(fontSize: 20, fontFamily: 'Rubik'),
                 ),
-                SizedBox(height: 5),
+                const SizedBox(height: 5),
                 //email
                 Text(
-                  _email,
-                  style: TextStyle(
+                  _user['email'],
+                  style: const TextStyle(
                       fontFamily: 'Rubik',
                       fontSize: 14,
                       color: Colors.blueGrey),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 //Qrcode
                 QrImage(
                   data: '$_fullTime',
@@ -176,7 +174,7 @@ class _HomeState extends State<Home> {
                   //   size: Size(288,295),
                   // ),
                 ),
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
                 //progress bar
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -205,7 +203,7 @@ class _HomeState extends State<Home> {
                     ),
                   ],
                 ),
-                SizedBox(height: 40),
+                const SizedBox(height: 40),
               ],
             ),
           ),
